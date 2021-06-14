@@ -1,0 +1,2 @@
+Rectangle coordinates,Colour,Logo height,Logo position,Text height,School name position,Class name position,Grid space,Name text height
+"[75, 75, 5325, 3525], [120, 120, 5280, 3480], [150, 150, 5250, 3450], [195, 3051, 5205, 3405]","(colour3), (colour2), ('#ffffff'), (colour1)",248,"(350, 3105)",120,"(440 + logo_width, 3152)","(5050 - class_text_width[0], 3152)","[195, 195, 5205, 3008]",63

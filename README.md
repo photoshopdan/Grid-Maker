@@ -23,6 +23,4 @@ Software which produces headshot grids from a folder of headshot images and a sp
 6. Press Make grids.
 7. The grids are saved in the original folder.
 
-![gui](img/gui.png)
-
-![examples](img/examples.png)
+![examples](img/example.png)

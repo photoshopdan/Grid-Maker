@@ -556,9 +556,6 @@ class JobRunner(QRunnable):
             spreadsheet_id_list = [spreadsheet_id_list[x] for
                                    x in match_indices]
 
-            if len(spreadsheet_id_list) > len(self.img_id_list):
-                self.signals.error05.emit(True)
-                raise UserWarning('Exception passed to user.')
             csv_data = [[x + '.jpg'] for x in self.img_id_list if
                         x not in spreadsheet_id_list]
             self.signals.loading.emit(60)
@@ -1126,7 +1123,7 @@ class Window(QMainWindow):
         self.textbox2 = QLineEdit(self)
         self.textbox2.move(250, 265)
         self.textbox2.resize(150, 22)
-        self.textbox2.setText(', 2020/2021')
+        self.textbox2.setText(open('year_text.txt').read())
 
         self.btn1 = QPushButton(self)
         self.btn1.move(193, 345)
@@ -1367,6 +1364,10 @@ class Window(QMainWindow):
             self.runner.inputdate = self.textbox2.text()
             self.runner.gvstatus = self.checkbox2.isChecked()
             self.runner.class_set = self.selected_classes
+            
+            with open('year_text.txt', 'w') as f:
+                f.write(self.textbox2.text())
+                
             self.runner.commence()
 
     def custom_grid_final(self):
@@ -1402,6 +1403,9 @@ class Window(QMainWindow):
             self.runner.inputlayout = 'Full-page grid layout'
             self.runner.customstatus = True
             self.runner.class_set = self.selected_classes
+            
+            with open('year_text.txt', 'w') as f:
+                f.write(self.textbox2.text())
             
             self.runner.commence()
 

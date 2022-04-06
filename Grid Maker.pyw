@@ -1109,7 +1109,7 @@ class Window(QMainWindow):
         self.comboBox3.addItem('Surname')
         self.comboBox3.addItem('Student ID')
         self.comboBox3.addItem('Custom (column AT)')
-        self.comboBox3.setCurrentText('Surname')
+        self.comboBox3.setCurrentText('Custom (column AT)')
 
         self.checkbox1 = QCheckBox(self)
         self.checkbox1.move(250, 182)
@@ -1403,9 +1403,6 @@ class Window(QMainWindow):
             self.runner.inputlayout = 'Full-page grid layout'
             self.runner.customstatus = True
             self.runner.class_set = self.selected_classes
-            
-            with open('year_text.txt', 'w') as f:
-                f.write(self.textbox2.text())
             
             self.runner.commence()
 

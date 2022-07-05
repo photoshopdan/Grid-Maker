@@ -1,3 +1,4 @@
+from genericpath import getsize
 import os
 import sys
 import glob
@@ -31,25 +32,28 @@ class Layout():
             1.33: '43'
             }
         self.canvas_size = self.size_dict[size]
-        self.canvas_graphics = self.csvread('Layouts\\'+instructions+'_'+
+        self.canvas_graphics = self.csvread(os.path.join(ROOT_DIR,
+                                            'Layouts\\'+instructions+'_'+
                                             str(self.canvas_size[0])+'x'+
                                             str(self.canvas_size[1])+
                                             '_canvas_graphics'+'_'+
-                                            self.ratio_dict[aspect]+'.csv')
+                                            self.ratio_dict[aspect]+'.csv'))
         self.aspect, self.instructions = aspect, instructions
 
         if instructions != 'Full-page grid layout':
-            self.imsize = self.csvread('Layouts\\'+instructions+'_'+
+            self.imsize = self.csvread(os.path.join(ROOT_DIR,
+                                        'Layouts\\'+instructions+'_'+
                                        str(self.canvas_size[0])+'x'+
                                        str(self.canvas_size[1])+
                                        '_imsize'+'_'+self.ratio_dict[aspect]+
-                                       '.csv')
+                                       '.csv'))
             
-            self.implace = self.csvread('Layouts\\'+instructions+'_'+
+            self.implace = self.csvread(os.path.join(ROOT_DIR,
+                                        'Layouts\\'+instructions+'_'+
                                         str(self.canvas_size[0])+'x'+
                                         str(self.canvas_size[1])+
                                         '_implace'+'_'+self.ratio_dict[aspect]+
-                                        '.csv')
+                                        '.csv'))
 
     def make_canvas(self):
         canv = Image.new('RGB', self.canvas_size, '#ffffff')
@@ -368,7 +372,8 @@ class Layout():
             img_gv = img.resize((1800, 1200),
                                 resample = Image.HAMMING,
                                 reducing_gap = 2.0)
-            with Image.open('GV Templates\\18x12.jpg') as gv:
+            with Image.open(os.path.join(
+                ROOT_DIR, 'GV Templates', '18x12.jpg')) as gv:
                 gv_canvas = gv
                 gv_canvas.load()
             gv_canvas.paste(img_gv, (0, 300))
@@ -379,7 +384,8 @@ class Layout():
             img_gv = img.resize((3000, 2000),
                                 resample = Image.HAMMING,
                                 reducing_gap = 2.0)
-            with Image.open('GV Templates\\30x20.jpg') as gv:
+            with Image.open(os.path.join(
+                ROOT_DIR, 'GV Templates', '30x20.jpg')) as gv:
                 gv_canvas = gv
                 gv_canvas.load()
             gv_canvas.paste(img_gv, (0, 500))
@@ -390,7 +396,8 @@ class Layout():
             img_gv = img.resize((1500, 1200),
                                 resample = Image.HAMMING,
                                 reducing_gap = 2.0)
-            with Image.open('GV Templates\\15x12.jpg') as gv:
+            with Image.open(os.path.join(
+                ROOT_DIR, 'GV Templates', '15x12.jpg')) as gv:
                 gv_canvas = gv
                 gv_canvas.load()
             gv_canvas.paste(img_gv, (0, 300))
@@ -469,10 +476,10 @@ class JobRunner(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        # Compile paths of all the required files.
+        # Produce list of paths of all the required files.
         # Prompt if they can't be found.
         self.signals.loading.emit(0)
-        self.folder = sys.argv[1:]
+        self.folder = [r'C:\Users\Dan\Documents\Python\Grid Maker\Benchmark Set\3-2 Ratio']#sys.argv[1:]
         self.img_list = []
         self.img_id_list = []
         if len(self.folder) != 1:
@@ -659,8 +666,8 @@ class JobRunner(QRunnable):
         layout = Layout(self.inputsize,
                         self.inputlayout,
                         self.img_ratio_list[0])
-        profile = ImageCms.ImageCmsProfile('ICC Profile/'
-                                           + 'sRGB Color Space Profile.icm')
+        profile = ImageCms.ImageCmsProfile(os.path.join(ROOT_DIR, 'ICC Profile/'
+                                           + 'sRGB Color Space Profile.icm'))
         img_profile = profile.tobytes()
         bad_characters = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', '\n']
         # Create folder in which grids will be saved.
@@ -881,7 +888,7 @@ class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
         self.setWindowTitle('Grid Maker')
-        self.setWindowIcon(QIcon('gridmakericon.ico'))
+        self.setWindowIcon(QIcon(os.path.join(ROOT_DIR, 'gridmakericon.ico')))
         QApplication.setStyle(QStyleFactory.create('Fusion'))
 
         self.threadpool = QThreadPool()
@@ -900,7 +907,8 @@ class Window(QMainWindow):
         
         self.load = QProgressDialog('Checking files.', 'Cancel', 0, 100)
         self.load.setWindowTitle('Grid Maker')
-        self.load.setWindowIcon(QIcon('gridmakericon.ico'))
+        self.load.setWindowIcon(QIcon(os.path.join(
+            ROOT_DIR, 'gridmakericon.ico')))
         self.load.setMinimumDuration(0)
         self.load.setCancelButton(None)
 
@@ -1123,7 +1131,8 @@ class Window(QMainWindow):
         self.textbox2 = QLineEdit(self)
         self.textbox2.move(250, 265)
         self.textbox2.resize(150, 22)
-        self.textbox2.setText(open('year_text.txt').read())
+        self.textbox2.setText(
+            open(os.path.join(ROOT_DIR, 'year_text.txt')).read())
 
         self.btn1 = QPushButton(self)
         self.btn1.move(193, 345)
@@ -1365,7 +1374,7 @@ class Window(QMainWindow):
             self.runner.gvstatus = self.checkbox2.isChecked()
             self.runner.class_set = self.selected_classes
             
-            with open('year_text.txt', 'w') as f:
+            with open(os.path.join(ROOT_DIR, 'year_text.txt'), 'w') as f:
                 f.write(self.textbox2.text())
                 
             self.runner.commence()
@@ -1412,7 +1421,7 @@ class Window(QMainWindow):
 
 
 if __name__ == "__main__":
-
+    ROOT_DIR = os.path.realpath(os.path.dirname(__file__))
     def run():
         sys.excepthook = except_hook  # for showing exception warnings
         app = QApplication(sys.argv)

@@ -1,4 +1,3 @@
-from genericpath import getsize
 import os
 import sys
 import glob
@@ -7,19 +6,18 @@ from PIL import Image, ImageFont, ImageDraw, ImageColor, ImageCms
 from iptcinfo3 import IPTCInfo
 import csv
 from openpyxl import load_workbook
-from PyQt5.QtCore import (QCoreApplication, Qt, QObject, pyqtSignal, pyqtSlot,
-                          QRunnable, QThreadPool)
-from PyQt5.QtWidgets import (QWidget, QApplication, QProgressBar, QMainWindow,
+from PyQt5.QtCore import (Qt, QObject, pyqtSignal, pyqtSlot, QRunnable,
+                          QThreadPool)
+from PyQt5.QtWidgets import (QApplication, QProgressBar, QMainWindow,
                              QPushButton, QComboBox, QLabel, QStyleFactory,
-                             QColorDialog, QMessageBox, QAction, QLineEdit,
-                             QCheckBox, QProgressDialog, QListWidget,
-                             QAbstractItemView)
-from PyQt5.QtGui import (QIcon, QColor)
+                             QColorDialog, QMessageBox, QLineEdit, QCheckBox,
+                             QProgressDialog, QListWidget, QAbstractItemView)
+from PyQt5.QtGui import QIcon
 
 
 class Layout():
 
-    def __init__(self, size, instructions, aspect):
+    def __init__(self, size, instructions, aspect, reverse):
         self.size_dict = {
             '18" x 12"': (5400, 3600),
             '12" x 8"': (3600, 2400),
@@ -32,28 +30,32 @@ class Layout():
             1.33: '43'
             }
         self.canvas_size = self.size_dict[size]
-        self.canvas_graphics = self.csvread(os.path.join(ROOT_DIR,
-                                            'Layouts\\'+instructions+'_'+
-                                            str(self.canvas_size[0])+'x'+
-                                            str(self.canvas_size[1])+
-                                            '_canvas_graphics'+'_'+
-                                            self.ratio_dict[aspect]+'.csv'))
+        if reverse:
+            self.canvas_graphics = self.csvread(
+                os.path.join(ROOT_DIR, 'Layouts\\' + instructions + '_'
+                             + str(self.canvas_size[0]) + 'x'
+                             + str(self.canvas_size[1]) + '_canvas_graphics'
+                             + '_' + self.ratio_dict[aspect] + '_reverse.csv'))
+        else:
+            self.canvas_graphics = self.csvread(
+                os.path.join(ROOT_DIR, 'Layouts\\' + instructions + '_'
+                             + str(self.canvas_size[0]) + 'x'
+                             + str(self.canvas_size[1]) + '_canvas_graphics'
+                             + '_' + self.ratio_dict[aspect] + '.csv'))
         self.aspect, self.instructions = aspect, instructions
 
         if instructions != 'Full-page grid layout':
-            self.imsize = self.csvread(os.path.join(ROOT_DIR,
-                                        'Layouts\\'+instructions+'_'+
-                                       str(self.canvas_size[0])+'x'+
-                                       str(self.canvas_size[1])+
-                                       '_imsize'+'_'+self.ratio_dict[aspect]+
-                                       '.csv'))
-            
-            self.implace = self.csvread(os.path.join(ROOT_DIR,
-                                        'Layouts\\'+instructions+'_'+
-                                        str(self.canvas_size[0])+'x'+
-                                        str(self.canvas_size[1])+
-                                        '_implace'+'_'+self.ratio_dict[aspect]+
-                                        '.csv'))
+            self.imsize = self.csvread(
+                os.path.join(ROOT_DIR, 'Layouts\\' + instructions + '_'
+                             + str(self.canvas_size[0]) + 'x'
+                             + str(self.canvas_size[1]) + '_imsize' + '_'
+                             + self.ratio_dict[aspect] + '.csv'))
+
+            self.implace = self.csvread(
+                os.path.join(ROOT_DIR, 'Layouts\\' + instructions + '_'
+                             + str(self.canvas_size[0]) + 'x'
+                             + str(self.canvas_size[1]) + '_implace' + '_'
+                             + self.ratio_dict[aspect] + '.csv'))
 
     def make_canvas(self):
         canv = Image.new('RGB', self.canvas_size, '#ffffff')
@@ -64,11 +66,11 @@ class Layout():
         if self.instructions == 'Full-page grid layout':
             for p, c in list(zip(eval(self.canvas_graphics[0][0]),
                                  eval(self.canvas_graphics[0][1]))):
-                draw.rectangle(p, fill = c, outline = None)
+                draw.rectangle(p, fill=c, outline=None)
         else:
             for p, c in list(zip(eval(self.canvas_graphics[n-1][0]),
                                  eval(self.canvas_graphics[n-1][1]))):
-                draw.rectangle(p, fill = c, outline = None)
+                draw.rectangle(p, fill=c, outline=None)
 
     def calc_size(self, n, im_w_pad, im_h_pad, custom, c_w, c_h):
         im_w, im_h = 200, 200 * self.aspect
@@ -114,7 +116,6 @@ class Layout():
 
         return (resize_w, resize_h, columns, rows, max_w, max_h, c_tlx, c_tly)
 
-
     def image_place(self, canv, n, i, im, grid_data):
         if self.instructions == 'Full-page grid layout':
             im_w, im_h, columns, rows, max_w, max_h, c_tlx, c_tly = grid_data
@@ -141,20 +142,20 @@ class Layout():
     def image_resize(self, im, n, calc_size):
         if self.instructions == 'Full-page grid layout':
             img = im.resize(calc_size,
-                            resample = Image.HAMMING,
-                            reducing_gap = 2.0)
+                            resample=Image.HAMMING,
+                            reducing_gap=2.0)
         else:
             img = im.resize(eval(self.imsize[0][n-1]),
-                            resample = Image.HAMMING,
-                            reducing_gap = 2.0)
-            
+                            resample=Image.HAMMING,
+                            reducing_gap=2.0)
+
         return img
 
     def image_resize_caption(self, im, n, ratio, custom, calc_size, txt, col):
         if self.instructions == 'Full-page grid layout':
             canvas_x = Image.new('RGB',
                                  calc_size,
-                                 color = '#ffffff')
+                                 color='#ffffff')
             if custom == True:
                 caption_resize_x = int((calc_size[1]
                                         - (txt * 2.8)) / ratio)
@@ -168,26 +169,26 @@ class Layout():
                                        - (eval(self.canvas_graphics[0][8])
                                            * 2.8))
             img = im.resize((caption_resize_x, caption_resize_y),
-                            resample = Image.HAMMING,
-                            reducing_gap = 2.0)
+                            resample=Image.HAMMING,
+                            reducing_gap=2.0)
             img = self.keyline(img, col)
             canvas_x.paste(img, (int((calc_size[0] / 2)
                                      - caption_resize_x / 2), 0))
         else:
             canvas_x = Image.new('RGB',
                                  (eval(self.imsize[0][n-1])),
-                                 color = '#ffffff')
+                                 color='#ffffff')
             caption_resize_x = int(((eval(self.imsize[0][n-1])[1])
                                     * 0.76) / ratio)
             caption_resize_y = int((eval(self.imsize[0][n-1])[1])
                                    * 0.76)
             img = im.resize((caption_resize_x, caption_resize_y),
-                            resample = Image.HAMMING,
-                            reducing_gap = 2.0)
+                            resample=Image.HAMMING,
+                            reducing_gap=2.0)
             img = self.keyline(img, col)
             canvas_x.paste(img, (int((canvas_x.width / 2)
                                      - caption_resize_x / 2), 0))
-            
+
         return canvas_x
 
     def keyline(self, im, col):
@@ -205,20 +206,22 @@ class Layout():
 
             return Image.fromarray(img_array)
 
-    def logo_place(self, canv, im, n):
+    def logo_place(self, canv, im, logo_width, n):
         if im.mode == 'RGBA':
             if self.instructions == 'Full-page grid layout':
-                canv.paste(im, eval(self.canvas_graphics[0][3]), mask = im)
+                canv.paste(im, eval(self.canvas_graphics[0][3]), mask=im)
             else:
-                canv.paste(im, eval(self.canvas_graphics[n-1][3]), mask = im)
+                canv.paste(im, eval(self.canvas_graphics[n-1][3]), mask=im)
         else:
             if self.instructions == 'Full-page grid layout':
                 canv.paste(im, eval(self.canvas_graphics[0][3]))
             else:
                 canv.paste(im, eval(self.canvas_graphics[n-1][3]))
 
-    def text_place(self, canv, schoolname, classname, logo_width, n, col4):
+    def text_place(self, canv, schoolname, classname, logo_width, n, col4,
+                   reverse):
         draw = ImageDraw.Draw(canv)
+        # Rough font size normalisation.
         scale_factor_dict = {(5400, 3600): 1.08,
                              (3600, 2400): 1.08,
                              (4500, 3600): 1.18,
@@ -233,16 +236,21 @@ class Layout():
             full_width = (class_text_width[0]
                           + school_text_width[0]
                           + logo_width)
-            canv_space = (eval(self.canvas_graphics[0][6])[0]
-                          + class_text_width[0]
-                          - eval(self.canvas_graphics[0][3])[0])
+            if reverse:
+                canv_space = (eval(self.canvas_graphics[0][3])[0]
+                              + logo_width
+                              - eval(self.canvas_graphics[0][6])[0])
+            else:
+                canv_space = (eval(self.canvas_graphics[0][6])[0]
+                              + class_text_width[0]
+                              - eval(self.canvas_graphics[0][3])[0])
             school_text_position = eval(self.canvas_graphics[0][5])
             class_text_position = eval(self.canvas_graphics[0][6])
             if (full_width * scale_factor) > canv_space:
                 decrease_multiplier = canv_space / (full_width * scale_factor)
                 font = ImageFont.truetype("GOTHIC.TTF",
-                                          int(eval(self.canvas_graphics[0][4])*
-                                              decrease_multiplier))
+                                          int(eval(self.canvas_graphics[0][4])
+                                              * decrease_multiplier))
                 school_text_width_copy = school_text_width
                 class_text_width_copy = class_text_width
                 school_text_width = font.getsize(schoolname)
@@ -253,11 +261,11 @@ class Layout():
                                             - school_text_width[1]) / 2
                 class_text_position[1] += (class_text_width_copy[1]
                                            - class_text_width[1]) / 2
-                
+
             draw.text(tuple(school_text_position),
-                      schoolname, font = font, fill = col4)
+                      schoolname, font=font, fill=col4)
             draw.text(tuple(class_text_position),
-                      classname, font = font, fill = col4)
+                      classname, font=font, fill=col4)
         else:
             font = ImageFont.truetype("GOTHIC.TTF",
                                       eval(self.canvas_graphics[n-1][4]))
@@ -266,19 +274,25 @@ class Layout():
             full_width = (class_text_width[0]
                           + school_text_width[0]
                           + logo_width)
-            canv_space = (eval(self.canvas_graphics[n-1][6])[0]
-                          + class_text_width[0]
-                          - eval(self.canvas_graphics[n-1][3])[0])
+            if reverse:
+                canv_space = (eval(self.canvas_graphics[n-1][3])[0]
+                              + logo_width
+                              - eval(self.canvas_graphics[n-1][6])[0])
+            else:
+                canv_space = (eval(self.canvas_graphics[n-1][6])[0]
+                              + class_text_width[0]
+                              - eval(self.canvas_graphics[n-1][3])[0])
             school_text_position = eval(self.canvas_graphics[n-1][5])
             class_text_position = eval(self.canvas_graphics[n-1][6])
             if (full_width * scale_factor) > canv_space:
                 decrease_multiplier = canv_space / (full_width * scale_factor)
                 font = ImageFont.truetype("GOTHIC.TTF",
                                           int(eval(self.canvas_graphics[n-1]
-                                                   [4])*
-                                              decrease_multiplier))
+                                                   [4])
+                                              * decrease_multiplier))
                 school_text_width_copy = school_text_width
                 class_text_width_copy = class_text_width
+                print(schoolname)
                 school_text_width = font.getsize(schoolname)
                 class_text_width = font.getsize(classname)
                 school_text_position = list(eval(self.canvas_graphics[n-1][5]))
@@ -287,11 +301,11 @@ class Layout():
                                             - school_text_width[1]) / 2
                 class_text_position[1] += (class_text_width_copy[1]
                                            - class_text_width[1]) / 2
-            
+
             draw.text(tuple(school_text_position),
-                      schoolname, font = font, fill = col4)
+                      schoolname, font=font, fill=col4)
             draw.text(tuple(class_text_position),
-                      classname, font = font, fill = col4)
+                      classname, font=font, fill=col4)
 
     def name_text_place(self, canv, fname, sname, n, custom, txt, col5):
         draw = ImageDraw.Draw(canv)
@@ -358,20 +372,20 @@ class Layout():
                                       * decrease_multiplier))
             sname_text_width, _ = sname_font.getsize(sname)
             sname_position = sname_position + ((1 - decrease_multiplier) / 20)
-            
+
         draw.text((int((canv_w / 2) - (fname_text_width / 2)),
                    int(canv_h * fname_position)),
-                  fname, font = fname_font, fill = col5)
+                  fname, font=fname_font, fill=col5)
         draw.text((int((canv_w / 2) - (sname_text_width / 2)),
                    int(canv_h * sname_position)),
-                  sname, font = sname_font, fill = col5)
+                  sname, font=sname_font, fill=col5)
 
     def make_gv(self, img):
         if any([self.canvas_size == (5400, 3600),
                 self.canvas_size == (3600, 2400)]):
             img_gv = img.resize((1800, 1200),
-                                resample = Image.HAMMING,
-                                reducing_gap = 2.0)
+                                resample=Image.HAMMING,
+                                reducing_gap=2.0)
             with Image.open(os.path.join(
                 ROOT_DIR, 'GV Templates', '18x12.jpg')) as gv:
                 gv_canvas = gv
@@ -382,10 +396,11 @@ class Layout():
             return gv_canvas
         elif self.canvas_size == (9000, 6000):
             img_gv = img.resize((3000, 2000),
-                                resample = Image.HAMMING,
-                                reducing_gap = 2.0)
-            with Image.open(os.path.join(
-                ROOT_DIR, 'GV Templates', '30x20.jpg')) as gv:
+                                resample=Image.HAMMING,
+                                reducing_gap=2.0)
+            with Image.open(
+                os.path.join(
+                    ROOT_DIR, 'GV Templates', '30x20.jpg')) as gv:
                 gv_canvas = gv
                 gv_canvas.load()
             gv_canvas.paste(img_gv, (0, 500))
@@ -394,10 +409,11 @@ class Layout():
             return gv_canvas
         else:
             img_gv = img.resize((1500, 1200),
-                                resample = Image.HAMMING,
-                                reducing_gap = 2.0)
-            with Image.open(os.path.join(
-                ROOT_DIR, 'GV Templates', '15x12.jpg')) as gv:
+                                resample=Image.HAMMING,
+                                reducing_gap=2.0)
+            with Image.open(
+                os.path.join(
+                    ROOT_DIR, 'GV Templates', '15x12.jpg')) as gv:
                 gv_canvas = gv
                 gv_canvas.load()
             gv_canvas.paste(img_gv, (0, 300))
@@ -416,7 +432,7 @@ class Layout():
         draw.text((int(img_size[0] * 0.04),
                    int((img_size[1] / 3) - txt_size * 0.75)),
                   'www.pret-a-portrait.net',
-                  font = font, fill = (180, 180, 180, 30))
+                  font=font, fill=(180, 180, 180, 30))
         img_watermark = Image.alpha_composite(img_watermark, txt_canv)
         img_watermark = img_watermark.convert('RGB')
 
@@ -425,7 +441,7 @@ class Layout():
     def csvread(self, path):
         with open(path) as f:
             f_csv = csv.reader(f)
-            headers = next(f_csv)
+            next(f_csv)
             csvvar = []
             for row in f_csv:
                 csvvar.append(row)
@@ -447,7 +463,7 @@ class WorkerSignals(QObject):
 
 
 class JobRunner(QRunnable):
-    
+
     signals = WorkerSignals()
 
     def __init__(self):
@@ -458,6 +474,7 @@ class JobRunner(QRunnable):
         self.inputtextsize = []
         self.inputsize = []
         self.inputlayout = []
+        self.inputreverse = False
         self.inputorder = []
         self.inputname = []
         self.inputcolour1 = []
@@ -479,7 +496,7 @@ class JobRunner(QRunnable):
         # Produce list of paths of all the required files.
         # Prompt if they can't be found.
         self.signals.loading.emit(0)
-        self.folder = [r'C:\Users\Dan\Documents\Python\Grid Maker\Benchmark Set\3-2 Ratio']#sys.argv[1:]
+        self.folder = sys.argv[1:]
         self.img_list = []
         self.img_id_list = []
         if len(self.folder) != 1:
@@ -488,14 +505,13 @@ class JobRunner(QRunnable):
         if not os.path.isdir(self.folder[0]):
             self.signals.error01.emit(True)
             raise UserWarning('Exception passed to user.')
-        folder_short = (self.folder[0][self.folder[0].rindex('\\'):])[1:]
         try:
             spreadsheet = glob.glob('%s\\**\\*.xlsx' % self.folder[0],
-                                    recursive = True)[0]
+                                    recursive=True)[0]
             images = glob.glob('%s\\**\\*.jpg' % self.folder[0],
-                               recursive = True) +\
+                               recursive=True) +\
                      glob.glob('%s\\**\\*.png' % self.folder[0],
-                               recursive = True)
+                               recursive=True)
         except IndexError:
             self.signals.error02.emit(True)
             raise UserWarning('Exception passed to user.')
@@ -516,7 +532,7 @@ class JobRunner(QRunnable):
                     self.img_id_list.append(img_name_short[
                         :img_name_short.rindex('.')])
                 try:
-                    check_for_image = self.img_list[0]
+                    _ = self.img_list[0]
                 except IndexError:
                     self.signals.error02.emit(True)
                     raise UserWarning('Exception passed to user.')
@@ -557,7 +573,7 @@ class JobRunner(QRunnable):
                     start_at = loc
                 else:
                     pass
-            
+
             self.spreadsheet_data = [spreadsheet_data[x] for
                                      x in match_indices]
             spreadsheet_id_list = [spreadsheet_id_list[x] for
@@ -611,16 +627,14 @@ class JobRunner(QRunnable):
                         self.signals.error08.emit(len(dupes), '\n'.join(dupes))
                         raise UserWarning('Exception passed to user.')
                     self.signals.loading.emit(100)
-                    
+
                     # Feed class list to menu. Start menu.
                     self.class_set = set([x[2] for x in self.spreadsheet_data])
                     self.signals.go.emit(True)
 
-
     def commence(self):
-        
         overflow_warning = []
-        
+
         # Sort spreadsheet data according to user-selected attribute.
         if self.inputorder == 'Surname':
             sort1 = 0
@@ -665,7 +679,8 @@ class JobRunner(QRunnable):
         # Load layout data
         layout = Layout(self.inputsize,
                         self.inputlayout,
-                        self.img_ratio_list[0])
+                        self.img_ratio_list[0],
+                        self.inputreverse)
         profile = ImageCms.ImageCmsProfile(os.path.join(ROOT_DIR, 'ICC Profile/'
                                            + 'sRGB Color Space Profile.icm'))
         img_profile = profile.tobytes()
@@ -691,7 +706,7 @@ class JobRunner(QRunnable):
         except AttributeError:
             self.logo = []
             logo_width = -90
-            
+
         # Construct canvas.
         if self.customstatus == True:
             canvas = Image.new('RGB', (int(self.inputwidth),
@@ -745,7 +760,7 @@ class JobRunner(QRunnable):
                                      self.inputcolour2,
                                      self.inputcolour3,
                                      n)
-            
+
             # Add images.
             for file in files:
                 file_i = files.index(file)
@@ -807,14 +822,15 @@ class JobRunner(QRunnable):
                     self.customstatus == True]):
                 pass
             else:
-                layout.logo_place(canvas_i, self.logo, n)
+                layout.logo_place(canvas_i, self.logo, logo_width, n)
 
             # Add school and class name.
             if self.customstatus == False:
                 layout.text_place(canvas_i,
                                   str(self.inputschool),
                                   str(grade[0][2]) + self.inputdate,
-                                  logo_width, n, self.inputcolour4)
+                                  logo_width, n, self.inputcolour4,
+                                  self.inputreverse)
 
             # Save.
             if not self.customstatus:
@@ -829,13 +845,13 @@ class JobRunner(QRunnable):
                 filename = filename.replace(x, ' ')
             savename = os.path.join(gridfolder, filename + '.jpg')
             canvas_i.save(savename,
-                          quality = 95,
-                          dpi = (300, 300),
-                          icc_profile = img_profile)
+                          quality=95,
+                          dpi=(300, 300),
+                          icc_profile=img_profile)
             print(f'{filename}.jpg saved.')
 
             # Update metadata.
-            img_iptc = IPTCInfo(savename, force = True)
+            img_iptc = IPTCInfo(savename, force=True)
             img_iptc['caption/abstract'] = 'PAN12'
             img_iptc.save()
             try:
@@ -846,12 +862,12 @@ class JobRunner(QRunnable):
             # Save GoVisually version.
             if self.gvstatus == True:
                 canvas_gv = layout.make_gv(canvas_i)
-                canvas_gv.save(gvfolder+'\\'+ filename +'.jpg',
-                               quality = 90,
-                               dpi = (300, 300),
-                               icc_profile = img_profile,
-                               optimize = True,
-                               subsampling = 2)
+                canvas_gv.save(gvfolder + '\\' + filename + '.jpg',
+                               quality=90,
+                               dpi=(300, 300),
+                               icc_profile=img_profile,
+                               optimize=True,
+                               subsampling=2)
 
         if overflow_warning:
             overflow_warning_str = '\n'.join(overflow_warning)
@@ -862,7 +878,7 @@ class JobRunner(QRunnable):
         sys.exit()
 
     def excel_to_list(self, sheet, columns):
-        wb = load_workbook(filename = sheet)
+        wb = load_workbook(filename=sheet)
         ws = wb.active
         func_array = []
         for c in columns:
@@ -875,11 +891,11 @@ class JobRunner(QRunnable):
         return func_array
 
     def csvwrite(self, path, rows, mode):
-        with open(path, mode, newline = '\n') as csvfile:
+        with open(path, mode, newline='\n') as csvfile:
             csvwriter = csv.writer(csvfile,
-                                   delimiter = ',',
-                                   quotechar = '"',
-                                   quoting = csv.QUOTE_MINIMAL)
+                                   delimiter=',',
+                                   quotechar='"',
+                                   quoting=csv.QUOTE_MINIMAL)
             csvwriter.writerow(rows)
 
 
@@ -904,7 +920,7 @@ class Window(QMainWindow):
         self.runner.signals.error07.connect(self.sitting_type_error)
         self.runner.signals.error08.connect(self.name_duplicate_error)
         self.runner.signals.go.connect(self.grid_choice)
-        
+
         self.load = QProgressDialog('Checking files.', 'Cancel', 0, 100)
         self.load.setWindowTitle('Grid Maker')
         self.load.setWindowIcon(QIcon(os.path.join(
@@ -913,7 +929,7 @@ class Window(QMainWindow):
         self.load.setCancelButton(None)
 
         self.selected_classes = set()
-        
+
         self.threadpool.start(self.runner)
 
     def update_loading(self, n):
@@ -922,23 +938,23 @@ class Window(QMainWindow):
 
     def input_error(self):
         ie_w = QMessageBox.warning(self, 'Warning',
-                                   'Invalid input.\n'+
-                                   '\nPlease drag a folder onto the app.',
+                                   'Invalid input.\n'
+                                   + '\nPlease drag a folder onto the app.',
                                    QMessageBox.Ok)
-                    
+
         if ie_w == QMessageBox.Ok:
             sys.exit()
         else:
             pass
-        
+
     def file_error(self):
         fe_w = QMessageBox.warning(self, 'Warning',
-                                   'Something is missing from the folder.\n'+
-                                   '\nPlease check that the folder contains '+
-                                   'both\nthe headshot images and the '+
-                                   'sitting spreadsheet.',
+                                   'Something is missing from the folder.\n'
+                                   + '\nPlease check that the folder contains '
+                                   + 'both\nthe headshot images and the '
+                                   + 'sitting spreadsheet.',
                                    QMessageBox.Ok)
-                    
+
         if fe_w == QMessageBox.Ok:
             sys.exit()
         else:
@@ -946,10 +962,10 @@ class Window(QMainWindow):
 
     def spreadsheet_error(self):
         se_w = QMessageBox.warning(self, 'Warning',
-                                   'The spreadsheet is missing data for some '+
-                                   'images.\nPlease see the file entitled '+
-                                   '"Missing data.csv",\nupdate the '+
-                                   'spreadsheet and try again.',
+                                   'The spreadsheet is missing data for some '
+                                   + 'images.\nPlease see the file entitled '
+                                   + '"Missing data.csv",\nupdate the '
+                                   + 'spreadsheet and try again.',
                                    QMessageBox.Ok)
 
         if se_w == QMessageBox.Ok:
@@ -959,9 +975,9 @@ class Window(QMainWindow):
 
     def spreadsheet_duplicate_error(self):
         sde_w = QMessageBox.warning(self, 'Warning',
-                                   'The spreadsheet has duplicate student '+
-                                   'IDs.\nPlease remove duplicate lines '+
-                                   'and try again.',
+                                   'The spreadsheet has duplicate student '
+                                   + 'IDs.\nPlease remove duplicate lines '
+                                   + 'and try again.',
                                    QMessageBox.Ok)
 
         if sde_w == QMessageBox.Ok:
@@ -971,9 +987,10 @@ class Window(QMainWindow):
 
     def ratio_error(self):
         se_w = QMessageBox.warning(self, 'Warning',
-                                   'There is a problem with the image aspect '+
-                                   'ratios.\n\nPlease either crop all images '+
-                                   'to 3:2 ratio, or all images to 4:3 ratio.',
+                                   'There is a problem with the image aspect '
+                                   + 'ratios.\n\nPlease either crop all '
+                                   + 'images to 3:2 ratio, or all images to '
+                                   + '4:3 ratio.',
                                    QMessageBox.Ok)
 
         if se_w == QMessageBox.Ok:
@@ -987,9 +1004,9 @@ class Window(QMainWindow):
         else:
             n_text = 'grids were'
         o_w = QMessageBox.warning(self, 'Warning',
-                                  f'Please note, the following {n_text} not '+
-                                  'made\ndue to there being over 40 images:'+
-                                  f'\n\n{i}',
+                                  f'Please note, the following {n_text} not '
+                                  + 'made\ndue to there being over 40 images:'
+                                  + f'\n\n{i}',
                                   QMessageBox.Ok)
 
         if o_w == QMessageBox.Ok:
@@ -999,10 +1016,10 @@ class Window(QMainWindow):
 
     def sitting_type_error(self):
         st_w = QMessageBox.warning(self, 'Warning',
-                                   'There are unrecognised sitting types on '+
-                                   'the spreadsheet.\n\nPlease correct the '+
-                                   'sitting types so that staff can be '+
-                                   'detected.',
+                                   'There are unrecognised sitting types on '
+                                   + 'the spreadsheet.\n\nPlease correct the '
+                                   + 'sitting types so that staff can be '
+                                   + 'detected.',
                                    QMessageBox.Ok)
 
         if st_w == QMessageBox.Ok:
@@ -1016,9 +1033,9 @@ class Window(QMainWindow):
         else:
             n_text = 'individuals appear'
         n_w = QMessageBox.warning(self, 'Warning',
-                                  f'Please note, the following {n_text} '+
-                                  'more than once in their class. \nPlease '+
-                                  f'check for duplicates:\n\n{i}',
+                                  f'Please note, the following {n_text} '
+                                  + 'more than once in their class. \nPlease '
+                                  + f'check for duplicates:\n\n{i}',
                                   QMessageBox.Ok)
 
         if n_w == QMessageBox.Ok:
@@ -1034,7 +1051,7 @@ class Window(QMainWindow):
         self.gridchoiceLabel.move(0, 20)
         self.gridchoiceLabel.resize(340, 35)
         self.gridchoiceLabel.setAlignment(Qt.AlignCenter)
-        
+
         self.listWidget = QListWidget(self)
         self.listWidget.setGeometry(40, 80, 260, 280)
         self.listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -1062,8 +1079,8 @@ class Window(QMainWindow):
         self.listWidget.setParent(None)
         self.preformatBtn.setParent(None)
         self.customBtn.setParent(None)
-        
-        self.setGeometry(600, 200, 480, 680)
+
+        self.setGeometry(600, 180, 480, 720)
         self.layoutChoice1 = QLabel('Size:', self)
         self.layoutChoice1.move(80, 60)
         self.layoutChoice2 = QLabel('Layout style:', self)
@@ -1072,27 +1089,29 @@ class Window(QMainWindow):
         self.colourChoice3.move(80, 140)
         self.nameChoice = QLabel('Add names:', self)
         self.nameChoice.move(80, 180)
-        self.schoolName = QLabel('School name:', self)
+        self.schoolName = QLabel('Reverse caption:', self)
         self.schoolName.move(80, 220)
+        self.schoolName = QLabel('School name:', self)
+        self.schoolName.move(80, 260)
         self.dateFormat = QLabel('Date format:', self)
-        self.dateFormat.move(80, 260)
-        
+        self.dateFormat.move(80, 300)
+
         self.colourChoice1 = QLabel('Caption bar colour:', self)
-        self.colourChoice1.move(80, 340)
+        self.colourChoice1.move(80, 380)
         self.colourChoice2 = QLabel('Inner border colour:', self)
-        self.colourChoice2.move(80, 380)
+        self.colourChoice2.move(80, 420)
         self.colourChoice3 = QLabel('Outer border colour:', self)
-        self.colourChoice3.move(80, 420)
+        self.colourChoice3.move(80, 460)
         self.colourChoice4 = QLabel('Caption text colour:', self)
-        self.colourChoice4.move(268, 340)
+        self.colourChoice4.move(268, 380)
         self.colourChoice5 = QLabel('Name text colour:', self)
-        self.colourChoice5.move(268, 380)
+        self.colourChoice5.move(268, 420)
         self.colourChoice5.setStyleSheet('color: #808080;')
         self.colourChoice6 = QLabel('Keyline colour:', self)
-        self.colourChoice6.move(268, 420)
+        self.colourChoice6.move(268, 460)
 
         self.gvChoice = QLabel('with GoVisually versions:', self)
-        self.gvChoice.move(217, 539)
+        self.gvChoice.move(217, 579)
         self.gvChoice.adjustSize()
 
         self.comboBox1 = QComboBox(self)
@@ -1103,7 +1122,7 @@ class Window(QMainWindow):
         self.comboBox1.addItem('15" x 12"')
         self.comboBox1.addItem('10" x 8"')
         self.comboBox1.addItem('30" x 20"')
-        
+
         self.comboBox2 = QComboBox(self)
         self.comboBox2.move(250, 105)
         self.comboBox2.resize(150, 22)
@@ -1123,67 +1142,72 @@ class Window(QMainWindow):
         self.checkbox1.move(250, 182)
         self.checkbox1.setCheckState(Qt.Unchecked)
         self.checkbox1.toggled.connect(self.blank_colour)
+        
+        self.checkbox3 = QCheckBox(self)
+        self.checkbox3.move(250, 222)
+        self.checkbox3.setCheckState(Qt.Unchecked)
+        self.checkbox3.toggled.connect(self.blank_colour)
 
         self.textbox1 = QLineEdit(self)
-        self.textbox1.move(250, 225)
+        self.textbox1.move(250, 265)
         self.textbox1.resize(150, 22)
 
         self.textbox2 = QLineEdit(self)
-        self.textbox2.move(250, 265)
+        self.textbox2.move(250, 305)
         self.textbox2.resize(150, 22)
         self.textbox2.setText(
             open(os.path.join(ROOT_DIR, 'year_text.txt')).read())
 
         self.btn1 = QPushButton(self)
-        self.btn1.move(193, 345)
+        self.btn1.move(193, 385)
         self.btn1.resize(22, 22)
         self.btn1.clicked.connect(lambda: self.colour_picker(1))
 
         self.btn2 = QPushButton(self)
-        self.btn2.move(193, 385)
+        self.btn2.move(193, 425)
         self.btn2.resize(22, 22)
         self.btn2.clicked.connect(lambda: self.colour_picker(2))
 
         self.btn3 = QPushButton(self)
-        self.btn3.move(193, 425)
+        self.btn3.move(193, 465)
         self.btn3.resize(22, 22)
         self.btn3.clicked.connect(lambda: self.colour_picker(3))
 
         self.btn4 = QPushButton(self)
-        self.btn4.move(378, 345)
+        self.btn4.move(378, 385)
         self.btn4.resize(22, 22)
         self.btn4.clicked.connect(lambda: self.colour_picker(4))
 
         self.btn5 = QPushButton(self)
-        self.btn5.move(378, 385)
+        self.btn5.move(378, 425)
         self.btn5.resize(22, 22)
         self.btn5.clicked.connect(lambda: self.colour_picker(5))
         self.btn5.setEnabled(False)
 
         self.btn6 = QPushButton(self)
-        self.btn6.move(378, 425)
+        self.btn6.move(378, 465)
         self.btn6.resize(22, 22)
         self.btn6.clicked.connect(lambda: self.colour_picker(6))
 
         self.checkbox2 = QCheckBox(self)
-        self.checkbox2.move(346, 531)
+        self.checkbox2.move(346, 571)
         self.checkbox2.setCheckState(Qt.Unchecked)
 
         self.btn7 = QPushButton('Make grids', self)
-        self.btn7.move(120, 530)
+        self.btn7.move(120, 570)
         self.btn7.resize(80, 30)
         self.btn7.clicked.connect(self.colour_check)
 
         self.progress = QProgressBar(self)
-        self.progress.setGeometry(120, 590, 240, 18)
+        self.progress.setGeometry(120, 630, 240, 18)
 
         if self.runner.logostatus == True:
             self.logoIndicator = QLabel('School logo detected', self)
-            self.logoIndicator.move(20, 653)
+            self.logoIndicator.move(20, 693)
             self.logoIndicator.adjustSize()
         else:
             self.logoIndicator = QLabel('No school logo detected', self)
-            self.logoIndicator.move(20, 653)
+            self.logoIndicator.move(20, 693)
             self.logoIndicator.adjustSize()
 
         self.show()
@@ -1196,7 +1220,7 @@ class Window(QMainWindow):
         self.listWidget.setParent(None)
         self.preformatBtn.setParent(None)
         self.customBtn.setParent(None)
-        
+
         self.setGeometry(600, 200, 480, 680)
         self.layoutChoice = QLabel('Headshot order:', self)
         self.layoutChoice.move(80, 60)
@@ -1218,7 +1242,7 @@ class Window(QMainWindow):
         self.sizeChoice2.move(360, 260)
         self.sizeChoice3 = QLabel('Image width padding:', self)
         self.sizeChoice3.move(80, 319)
-        self.sizeChoice3.adjustSize() 
+        self.sizeChoice3.adjustSize()
         self.sizeChoice4 = QLabel('Image height padding:', self)
         self.sizeChoice4.move(80, 369)
         self.sizeChoice4.adjustSize()
@@ -1286,7 +1310,7 @@ class Window(QMainWindow):
 
         self.btn1 = QPushButton('Make grids', self)
         self.btn1.move(198, 530)
-        self.btn1.resize(80,30)
+        self.btn1.resize(80, 30)
         self.btn1.clicked.connect(self.custom_grid_final)
 
         self.progress = QProgressBar(self)
@@ -1356,7 +1380,7 @@ class Window(QMainWindow):
         elif all([self.checkbox1.isChecked(),
                   self.runner.inputcolour5 == []]):
             self.colour_error()
-            
+
         else:
             self.btn1.setEnabled(False)
             self.btn2.setEnabled(False)
@@ -1369,14 +1393,15 @@ class Window(QMainWindow):
             self.runner.inputlayout = self.comboBox2.currentText()
             self.runner.inputorder = self.comboBox3.currentText()
             self.runner.inputname = self.checkbox1.isChecked()
+            self.runner.inputreverse = self.checkbox3.isChecked()
             self.runner.inputschool = self.textbox1.text()
             self.runner.inputdate = self.textbox2.text()
             self.runner.gvstatus = self.checkbox2.isChecked()
             self.runner.class_set = self.selected_classes
-            
+
             with open(os.path.join(ROOT_DIR, 'year_text.txt'), 'w') as f:
                 f.write(self.textbox2.text())
-                
+
             self.runner.commence()
 
     def custom_grid_final(self):
@@ -1393,7 +1418,7 @@ class Window(QMainWindow):
         elif all([self.checkbox1.isChecked(),
                   self.textbox0.text() == '']):
             self.custom_grid_error()
-            
+
         else:
             self.btn1.setEnabled(False)
             self.btn5.setEnabled(False)
@@ -1412,7 +1437,7 @@ class Window(QMainWindow):
             self.runner.inputlayout = 'Full-page grid layout'
             self.runner.customstatus = True
             self.runner.class_set = self.selected_classes
-            
+
             self.runner.commence()
 
     def update_progress(self, n):
@@ -1432,5 +1457,3 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback) #
 
 run()
-
-

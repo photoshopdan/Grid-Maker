@@ -379,6 +379,26 @@ class Layout():
         draw.text((int((canv_w / 2) - (sname_text_width / 2)),
                    int(canv_h * sname_position)),
                   sname, font=sname_font, fill=col5)
+        
+    def absentee_text_place(self, canv, n, absentees, col4):
+        absentee_string = 'Absent: ' + ', '.join(absentees)
+        draw = ImageDraw.Draw(canv)
+
+        if self.instructions == 'Full-page grid layout':
+            x, y, max_width, font_size = eval(self.canvas_graphics[0][9])
+        else:
+            x, y, max_width, font_size = eval(self.canvas_graphics[n-1][8])
+            
+        font = ImageFont.truetype("GOTHIC.TTF", font_size)
+        absentee_text_width, _ = font.getsize(absentee_string)
+        
+        if absentee_text_width > max_width:
+            new_font_size = int(font_size * (max_width / absentee_text_width))
+            font = ImageFont.truetype("GOTHIC.TTF", new_font_size)
+            absentee_text_width, _ = font.getsize(absentee_string)
+
+        draw.text((int(x - absentee_text_width / 2), y), absentee_string,
+                  font=font, fill=col4)
 
     def make_gv(self, img):
         if any([self.canvas_size == (5400, 3600),
@@ -546,7 +566,8 @@ class JobRunner(QRunnable):
                                                     'AL',
                                                     'AQ',
                                                     'AR',
-                                                    'AT'))[1:])
+                                                    'AT',
+                                                    'AU'))[1:])
 
             # Put teachers before students by renaming sitting type code.
             try:
@@ -582,6 +603,7 @@ class JobRunner(QRunnable):
             csv_data = [[x + '.jpg'] for x in self.img_id_list if
                         x not in spreadsheet_id_list]
             self.signals.loading.emit(60)
+
             # Prompt user to update spreadsheet if data is missing.
             if csv_data:
                 csv_path = self.folder[0] + '\\Missing data.csv'
@@ -628,8 +650,22 @@ class JobRunner(QRunnable):
                         raise UserWarning('Exception passed to user.')
                     self.signals.loading.emit(100)
 
-                    # Feed class list to menu. Start menu.
+                    # Feed class list to menu.
                     self.class_set = set([x[2] for x in self.spreadsheet_data])
+
+                    # Make dictionary of sorted lists of absentees by class.
+                    self.absentees = {element: [] for element
+                                      in self.class_set}
+                    for x in spreadsheet_data:
+                        if any([x[6] == 'True',
+                                x[6] == '1']):
+                            self.absentees[x[2]].append([x[3], x[4]])
+                    for key, value in self.absentees.items():
+                        self.absentees[key] = sorted(value, key=lambda x: x[1])
+                        self.absentees[key] = [f'{x[0]} {x[1]}' for x
+                                               in self.absentees[key]]
+
+                    # Start menu.
                     self.signals.go.emit(True)
 
     def commence(self):
@@ -654,10 +690,10 @@ class JobRunner(QRunnable):
             sort3 = 3
 
         spreadsheet_data = sorted(self.spreadsheet_data,
-                                  key = lambda x: (x[2].casefold(),
-                                                   x[sort1].casefold(),
-                                                   x[sort2].casefold(),
-                                                   x[sort3].casefold()))
+                                  key=lambda x: (x[2].casefold(),
+                                                 x[sort1].casefold(),
+                                                 x[sort2].casefold(),
+                                                 x[sort3].casefold()))
 
         # Make images closer when name captions used.
         if self.inputname == True:
@@ -831,6 +867,13 @@ class JobRunner(QRunnable):
                                   str(grade[0][2]) + self.inputdate,
                                   logo_width, n, self.inputcolour4,
                                   self.inputreverse)
+
+            # Add absentees.
+            if not self.customstatus:
+                if self.absentees[grade[0][2]] != []:
+                    layout.absentee_text_place(canvas_i, n,
+                                               self.absentees[grade[0][2]],
+                                               self.inputcolour4)
 
             # Save.
             if not self.customstatus:
